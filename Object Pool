@@ -1,0 +1,133 @@
+#include <iostream>
+#include <vector>
+
+//----------------------------------------------------------------------------------------------------------------
+class Client
+{
+public:
+	Client()
+	{
+		value = 0;
+	}
+	void reset()
+	{
+		value = 0;
+	}
+	int getValue()
+	{
+		return value;
+	}
+	void setValue(int number)
+	{
+		value = number;
+	}
+private:
+	int value;
+
+};
+//struct Client 
+//{
+//	int value1 = 20;
+//	int value2 = 0;
+//};
+
+
+
+//----------------------------------------------------------------------------------------------------------------
+
+template <typename Type>
+class ObjectPool
+{
+public:
+    Type * GetObjects()
+	{
+		if (objects.size() == in_use)
+		{
+			Type*Type_pointer = new Type;
+			objects.push_back(std::make_pair(true, Type_pointer));
+			in_use++;
+			return objects[objects.size() - 1].second;
+		}
+		else
+		{
+			for (auto it = objects.begin(); it != objects.end(); ++it)
+			{
+				auto &ref = *it;
+				if (ref.first == false)
+				{
+					ref.first = true;
+					ref.second = new Type;
+					in_use++;
+					return ref.second;
+				}
+			}
+		}
+		return nullptr;
+	}
+//-----------------------------------------------
+	static ObjectPool &instance()
+	{
+		static ObjectPool inst;
+		return inst;
+	}
+//-----------------------------------------------------------------------------------------------------------------
+    void ReleaseObject(Type * Ob)
+	{
+		for (auto it = objects.begin(); it != objects.end(); ++it)
+		{
+			auto &ref = *it;
+			if (ref.second == Ob)
+			{
+				ref.first = false;
+				delete ref.second;
+				in_use--;
+			}
+		}
+	}
+
+//-----------------------------------------------------------------------------------------------------------------
+private:
+
+	ObjectPool()
+		: in_use(0)
+	{
+		objects.reserve(50);
+	}
+
+	int in_use;
+	std::vector<std::pair<bool, Type * > > objects;
+};
+//------------------------------------------------------------------------------------------------------------------
+
+
+	int main()
+	{
+		int a;
+
+		Client* one;
+		Client* two;
+
+		ObjectPool<Client> &pool = ObjectPool<Client>::instance();
+	
+		one = pool.GetObjects();
+		one->setValue(10);
+		std::cout << "one = " << one->getValue() << " [" << one << "]" << std::endl;
+
+		two = pool.GetObjects();
+		two->setValue(20);
+		std::cout << "two = " << two->getValue() << " [" << two << "]" << std::endl;
+
+		pool.ReleaseObject(one);
+		pool.ReleaseObject(two);
+		
+
+		one = pool.GetObjects();
+		std::cout << "one = " << one->getValue() << " [" << one << "]" << std::endl;
+
+		two = pool.GetObjects();
+		two->setValue(500);
+		std::cout << "two = " << two->getValue() << " [" << two << "]" << std::endl;
+
+		std::cin >> a;
+		return 0;
+	}
